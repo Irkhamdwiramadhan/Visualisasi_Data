@@ -7,10 +7,16 @@ import seaborn as sns
 # --- Load Dataset ---
 df = pd.read_csv("supermarket_sales - Sheet1 (1).csv")
 
+st.set_page_config(
+    page_title="Dashboard Analisis Data Supermarket",
+    page_icon="🧺"
+)
+
 # --- Sidebar ---
-st.sidebar.image("https://cdn-icons-png.flaticon.com/512/3075/3075977.png", width=80)
-st.sidebar.markdown("### 🍔 Supermarket Dashboard")
-st.sidebar.markdown("**Kelompok Pemula**")
+st.sidebar.image("https://cdn-icons-png.flaticon.com/512/891/891462.png", width=80)
+st.sidebar.markdown("### 🛒 Supermarket Dashboard")
+st.sidebar.markdown("**Kelompok Exclusive**")
+
 st.sidebar.markdown("---")
 
 # Radio dengan label dan emoji disamakan dengan bagian if
