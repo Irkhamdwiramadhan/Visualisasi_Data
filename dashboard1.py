@@ -11,6 +11,84 @@ st.set_page_config(
     page_title="Dashboard Analisis Data Supermarket",
     page_icon="🧺"
 )
+st.markdown("""
+    <style>
+    /* ====== BACKGROUND UTAMA ====== */
+    .stApp {
+        background: linear-gradient(135deg, #f5f7fa, #e8f0fe);
+        font-family: 'Segoe UI', sans-serif;
+        color: #333;
+    }
+
+    /* ====== JUDUL DAN TEKS ====== */
+    h1, h2, h3, h4 {
+        color: #2c3e50;
+        font-weight: 600;
+    }
+
+    /* ====== SIDEBAR ====== */
+    [data-testid="stSidebar"] {
+        background-color: #3f5d7d !important;  /* Lebih gelap */
+        color: white !important;
+        border: none;
+    }
+
+    [data-testid="stSidebar"] * {
+        color: white !important;
+    }
+
+    .stRadio label {
+        color: white !important;
+    }
+
+    /* ====== NAVBAR ====== */
+    header, .css-18ni7ap {
+        background-color: #dce3ec !important;  /* Lebih terang dari sidebar, lebih gelap dari background */
+        color: #333 !important;
+        border-bottom: 1px solid #ccc;
+    }
+
+    /* ====== TOMBOL UTAMA ====== */
+    button[kind="primary"] {
+        background-color: #2e7d32;
+        color: white;
+        border-radius: 8px;
+        padding: 0.5rem 1.2rem;
+    }
+
+    button[kind="primary"]:hover {
+        background-color: #1b5e20;
+    }
+
+    /* ====== TABEL / KARTU DATA ====== */
+    .css-1d391kg {
+        background: #ffffff;
+        border-radius: 12px;
+        padding: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+
+    /* ====== HILANGKAN FOOTER STREAMLIT ====== */
+    footer, .css-164nlkn {
+        display: none !important;
+    }
+
+    /* ====== SPASI UMUM KONTEN ====== */
+    .block-container {
+        padding: 2rem 3rem;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+
+
+
+
+
+color_discrete_sequence=px.colors.qualitative.Pastel
+
+
+
 
 # --- Sidebar ---
 st.sidebar.image("https://cdn-icons-png.flaticon.com/512/891/891462.png", width=80)
@@ -175,19 +253,25 @@ elif menu == "🏙️ Visualisasi Penjualan":
     st.write("Perusahaan sebaiknya mempertimbangkan untuk menyesuaikan stok dan strategi promosi di tiap cabang berdasarkan pola pembelian yang berbeda. Misalnya, di cabang Naypyitaw, produk makanan dan minuman sangat diminati, jadi stoknya bisa ditambah dan promosi difokuskan pada produk tersebut. Sementara di Yangon, produk rumah tangga lebih laku, jadi fokus bisa diarahkan ke sana. Di Mandalay, penjualan cukup seimbang, tapi bisa lebih ditingkatkan dengan promosi produk kesehatan dan olahraga yang cukup menonjol.")
 
 elif menu == "📈 Pola Transaksi":
-    st.title("📈 Pola Transaksi Penjualan")
-
-    # Pra-pemrosesan
+    st.title("Pola Transaksi")
+    # --- Parsing kolom waktu ---
     df['Time'] = pd.to_datetime(df['Time'])
     df['Hour'] = df['Time'].dt.hour
-
     df['Date'] = pd.to_datetime(df['Date'])
     df['Day'] = df['Date'].dt.day_name()
+    df['Month'] = df['Date'].dt.strftime('%B')  # Tambah nama bulan (e.g., January)
 
-    # --- Jumlah Transaksi per Jam ---
-    st.subheader("⏰ Berdasarkan Jam Operasional (10:00–20:00)")
+    # --- Filter bulan ---
+    bulan_tersedia = df['Month'].unique().tolist()
+    bulan_tersedia.sort()  # Urutkan alfabet
+    bulan_dipilih = st.selectbox("📅 Pilih Bulan", bulan_tersedia)
+
+    # Filter dataframe berdasarkan bulan yang dipilih
+    df_bulan = df[df['Month'] == bulan_dipilih]
+
+    st.subheader(f"⏰ Jumlah Transaksi per Jam ({bulan_dipilih})")
     jam_range = range(10, 21)
-    jam_agg = df[df['Hour'].isin(jam_range)].groupby('Hour').size().reindex(jam_range, fill_value=0)
+    jam_agg = df_bulan[df_bulan['Hour'].isin(jam_range)].groupby('Hour').size().reindex(jam_range, fill_value=0)
 
     fig_jam, ax1 = plt.subplots(figsize=(10, 4))
     ax1.plot(jam_agg.index, jam_agg.values, marker='o', linestyle='-', color='steelblue')
@@ -198,55 +282,39 @@ elif menu == "📈 Pola Transaksi":
     ax1.grid(True)
     for i, v in enumerate(jam_agg.values):
         ax1.text(jam_agg.index[i], v + 0.5, str(v), ha='center', va='bottom', fontsize=8)
-
     st.pyplot(fig_jam)
 
-    # Spacer
-    st.markdown("<br><br>", unsafe_allow_html=True)
-
-    # --- Jumlah Transaksi per Hari ---
-    st.subheader("📅 Berdasarkan Hari")
-    hari_terlaris = df['Day'].value_counts().reindex([
+    st.subheader(f"📅 Jumlah Transaksi per Hari ({bulan_dipilih})")
+    hari_terlaris = df_bulan['Day'].value_counts().reindex([
         'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
-    ])
+    ], fill_value=0)
 
     fig_hari, ax2 = plt.subplots(figsize=(10, 4))
     ax2.plot(hari_terlaris.index, hari_terlaris.values, marker='o', linestyle='-', color='salmon')
     ax2.set_title("Distribusi Transaksi per Hari")
     ax2.set_xlabel("Hari")
     ax2.set_ylabel("Jumlah Transaksi")
-    ax2.set_xticks(range(len(hari_terlaris.index)))
     ax2.set_xticklabels(hari_terlaris.index, rotation=45)
     ax2.grid(True)
     for i, v in enumerate(hari_terlaris.values):
         ax2.text(i, v + 0.5, str(v), ha='center', va='bottom', fontsize=8)
-
     st.pyplot(fig_hari)
-    # Spacer
-    st.markdown("<br><br>", unsafe_allow_html=True)
-    st.write("transaksi terbanyak terjadi pukul 19.00, menunjukkan pelanggan aktif di malam hari. Untuk harian, Sabtu adalah hari dengan transaksi tertinggi, diikuti Selasa. Senin dan Minggu tercatat paling sepi. Waktu terbaik untuk promosi adalah Sabtu pukul 18.00–19.00, sementara waktu sepi bisa dimanfaatkan untuk promo khusus agar menarik lebih banyak transaksi.")
 
-    # --- Heatmap Hari vs Jam ---
-    st.subheader("🔥 Heatmap Transaksi Berdasarkan Hari dan Jam")
+    st.subheader(f"🔥 Heatmap Transaksi Berdasarkan Hari dan Jam ({bulan_dipilih})")
+    df_bulan['Hour'] = df_bulan['Time'].dt.hour
+    df_bulan['Day'] = df_bulan['Date'].dt.day_name()
 
-    # Siapkan data heatmap
-    df['Hour'] = df['Time'].dt.hour
-    df['Day'] = df['Date'].dt.day_name()
-
-    pivot = df.pivot_table(index='Day', columns='Hour', values='Invoice ID', aggfunc='count')
+    pivot = df_bulan.pivot_table(index='Day', columns='Hour', values='Invoice ID', aggfunc='count')
     ordered_days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
     pivot = pivot.reindex(ordered_days)
 
-    # Visualisasi heatmap
     fig_heatmap, ax = plt.subplots(figsize=(12, 5))
     sns.heatmap(pivot, cmap='YlOrRd', linewidths=0.5, annot=True, fmt='g', ax=ax)
     ax.set_title('Heatmap Transaksi: Hari vs Jam')
     ax.set_xlabel('Jam')
     ax.set_ylabel('Hari')
-
     st.pyplot(fig_heatmap)
-    st.write("Heatmap ini memperkuat insight dari visualisasi sebelumnya dan memberikan tambahan konteks yang lebih spesifik. Kita bisa menyimpulkan bahwa waktu terbaik untuk promosi adalah Selasa dan Sabtu, terutama di jam 18.00–19.00, sedangkan jam 20.00 cenderung sepi di semua hari.")
-    
+
 
 elif menu == "📉 Korelasi Antar Kolom":
     st.title("📉 Scatter Plot Interaktif")
